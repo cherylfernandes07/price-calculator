@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Price comparator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f5f2;
+      color: #1a1a18;
+      min-height: 100vh;
+      padding: 1.5rem 1rem 3rem;
+    }
+
+    h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+    .subtitle { font-size: 13px; color: #6b6b66; margin-bottom: 1.5rem; }
+    .container { max-width: 700px; margin: 0 auto; }
+
+    .section { margin-bottom: 2rem; }
+    .section-title {
+      font-size: 13px;
+      font-weight: 500;
+      color: #6b6b66;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.75rem;
+      padding-bottom: 6px;
+      border-bottom: 0.5px solid rgba(0,0,0,0.1);
+    }
+
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 1rem;
+    }
+
+    .item-card {
+      background: #fff;
+      border: 0.5px solid rgba(0,0,0,0.12);
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+    }
+    .item-card.winner { border: 2px solid #16a34a; }
+
+    .label { font-size: 12px; color: #6b6b66; margin-bottom: 4px; }
+
+    .badge { font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 8px; }
+    .badge-win  { background: #dcfce7; color: #15803d; }
+    .badge-lose { background: #fef9c3; color: #854d0e; }
+
+    input[type="text"] {
+      width: 100%;
+      height: 36px;
+      padding: 0 10px;
+      border: 0.5px solid rgba(0,0,0,0.2);
+      border-radius: 8px;
+      font-size: 15px;
+      background: #fff;
+      color: #1a1a18;
+      outline: none;
+    }
+    input[type="text"]:focus { border-color: rgba(0,0,0,0.45); }
+    input.name-input {
+      border: none;
+      background: transparent;
+      padding: 0;
+      font-size: 14px;
+      font-weight: 500;
+      height: auto;
+      width: 80%;
+    }
+
+    select {
+      height: 36px;
+      padding: 0 4px;
+      border: 0.5px solid rgba(0,0,0,0.2);
+      border-radius: 8px;
+      font-size: 14px;
+      background: #f5f5f2;
+      color: #1a1a18;
+      outline: none;
+      cursor: pointer;
+    }
+
+    button {
+      background: transparent;
+      border: 0.5px solid rgba(0,0,0,0.25);
+      border-radius: 8px;
+      font-size: 14px;
+      padding: 9px 16px;
+      cursor: pointer;
+      color: #1a1a18;
+    }
+    button:hover { background: #f0efeb; }
+    button.remove-btn { border: none; font-size: 18px; padding: 0; color: #aaa; background: none; line-height: 1; }
+    button.add-btn { width: 100%; margin-bottom: 0.75rem; }
+
+    .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+    .input-row { display: flex; gap: 8px; align-items: flex-end; margin-bottom: 10px; }
+    .input-col { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+    .input-col.unit-col { flex: 0 0 auto; }
+
+    .results-row {
+      border-top: 0.5px solid rgba(0,0,0,0.1);
+      padding-top: 10px;
+    }
+    .result-val { font-size: 22px; font-weight: 500; margin-top: 2px; color: #1a1a18; }
+    .result-val.best  { color: #16a34a; }
+    .result-val.worst { color: #dc2626; }
+    .result-sub { font-size: 12px; color: #6b6b66; margin-top: 3px; }
+
+    .verdict {
+      display: none;
+      background: #f0efeb;
+      border-radius: 12px;
+      padding: 1rem 1.25rem;
+      margin-bottom: 0.75rem;
+    }
+    .verdict-title { font-size: 13px; color: #6b6b66; margin-bottom: 6px; }
+    .verdict-main  { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+    .verdict-sub   { font-size: 13px; color: #6b6b66; }
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>Price comparator</h1>
+  <p class="subtitle">Compare items by count or by weight — fill in what's on the label.</p>
+
+  <!-- SECTION 1: Price per unit -->
+  <div class="section">
+    <p class="section-title">By quantity (count)</p>
+    <div class="cards-grid" id="grid-unit"></div>
+    <button class="add-btn" onclick="addItem('unit')">+ Add another item</button>
+    <div class="verdict" id="verdict-unit">
+      <p class="verdict-title">Verdict</p>
+      <p class="verdict-main" id="verdict-unit-main"></p>
+      <p class="verdict-sub"  id="verdict-unit-sub"></p>
+    </div>
+  </div>
+
+  <!-- SECTION 2: Price per weight -->
+  <div class="section">
+    <p class="section-title">By weight</p>
+    <div class="cards-grid" id="grid-weight"></div>
+    <button class="add-btn" onclick="addItem('weight')">+ Add another item</button>
+    <div class="verdict" id="verdict-weight">
+      <p class="verdict-title">Verdict</p>
+      <p class="verdict-main" id="verdict-weight-main"></p>
+      <p class="verdict-sub"  id="verdict-weight-sub"></p>
+    </div>
+  </div>
+</div>
+<div>
+  <a href="https://www.omnicalculator.com/everyday-life/price-per-ounce" target="_blank">Online Price calculator</a>
+</div>
+
+<script>
+  let unitItems   = [
+    { id: 1, name: 'Item 1', price: '', qty: '' },
+    { id: 2, name: 'Item 2', price: '', qty: '' },
+  ];
+  let weightItems = [
+    { id: 1, name: 'Item 1', price: '', weight: '', unit: 'oz' },
+    { id: 2, name: 'Item 2', price: '', weight: '', unit: 'oz' },
+  ];
+  let nextUnitId   = 3;
+  let nextWeightId = 3;
+
+  function toOz(val, unit) {
+    if (unit === 'oz')    return val;
+    if (unit === 'lb')    return val * 16;
+    if (unit === 'g')     return val / 28.3495;
+    if (unit === 'kg')    return val / 0.0283495;
+    if (unit === 'fl oz') return val;
+    if (unit === 'ml')    return val / 29.5735;
+    if (unit === 'l')     return val / 0.0295735;
+  }
+
+  function calcPerUnit(item) {
+    const p = parseFloat(item.price);
+    const q = parseFloat(item.qty);
+    if (!p || !q || p <= 0 || q <= 0) return null;
+    return p / q;
+  }
+
+  function calcPerOz(item) {
+    const p = parseFloat(item.price);
+    const w = parseFloat(item.weight);
+    if (!p || !w || p <= 0 || w <= 0) return null;
+    return p / toOz(w, item.unit);
+  }
+
+  // ---- Unit section ----
+  function updateUnitResults() {
+    const valid = unitItems.map(i => ({ id: i.id, val: calcPerUnit(i) })).filter(x => x.val !== null);
+    const minVal = valid.length >= 2 ? Math.min(...valid.map(x => x.val)) : null;
+    const maxVal = valid.length >= 2 ? Math.max(...valid.map(x => x.val)) : null;
+
+    unitItems.forEach(item => {
+      const card = document.getElementById('ucard-' + item.id);
+      if (!card) return;
+      const perUnit = calcPerUnit(item);
+      const isWinner = perUnit !== null && valid.length >= 2 && perUnit === minVal;
+      const isLoser  = perUnit !== null && valid.length >= 2 && perUnit === maxVal && minVal !== maxVal;
+      card.className = 'item-card' + (isWinner ? ' winner' : '');
+      card.querySelector('.badge-area').innerHTML =
+        isWinner ? '<span class="badge badge-win">best value</span>' :
+        isLoser  ? '<span class="badge badge-lose">most expensive</span>' : '';
+      const valEl = card.querySelector('.val-unit');
+      valEl.textContent = perUnit !== null ? '$' + perUnit.toFixed(3) : '—';
+      valEl.className = 'result-val val-unit' + (isWinner ? ' best' : isLoser ? ' worst' : '');
+    });
+    updateUnitVerdict();
+  }
+
+  function updateUnitVerdict() {
+    const el = document.getElementById('verdict-unit');
+    const valid = unitItems.map(i => ({ ...i, v: calcPerUnit(i) })).filter(i => i.v !== null);
+    if (valid.length < 2) { el.style.display = 'none'; return; }
+    valid.sort((a, b) => a.v - b.v);
+    const best = valid[0], worst = valid[valid.length - 1];
+    const savings = ((worst.v - best.v) / worst.v * 100).toFixed(0);
+    el.style.display = 'block';
+    document.getElementById('verdict-unit-main').textContent = `${best.name} is the best deal at $${best.v.toFixed(3)} per unit`;
+    document.getElementById('verdict-unit-sub').innerHTML = `That's <strong>${savings}% cheaper</strong> per unit than ${worst.name}.`;
+  }
+
+  function buildUnitCard(item, idx) {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.id = 'ucard-' + item.id;
+    card.innerHTML = `
+      <div class="card-header">
+        <input class="name-input" type="text" value="${item.name}" placeholder="Item name"
+          oninput="unitItems[${idx}].name=this.value;updateUnitVerdict()" />
+        <button class="remove-btn" style="display:${unitItems.length > 2 ? 'inline-block' : 'none'};"
+          onclick="removeItem('unit',${item.id})">&times;</button>
+      </div>
+      <div class="badge-area"></div>
+      <div class="input-row">
+        <div class="input-col">
+          <p class="label">Price ($)</p>
+          <input type="text" inputmode="decimal" placeholder="0.00"
+            oninput="unitItems[${idx}].price=this.value;updateUnitResults()" />
+        </div>
+        <div class="input-col">
+          <p class="label">Quantity</p>
+          <input type="text" inputmode="decimal" placeholder="e.g. 12"
+            oninput="unitItems[${idx}].qty=this.value;updateUnitResults()" />
+        </div>
+      </div>
+      <div class="results-row">
+        <p class="label">Price per unit</p>
+        <p class="result-val val-unit">—</p>
+      </div>
+    `;
+    return card;
+  }
+
+  function renderUnitAll() {
+    const grid = document.getElementById('grid-unit');
+    grid.innerHTML = '';
+    unitItems.forEach((item, idx) => grid.appendChild(buildUnitCard(item, idx)));
+    updateUnitResults();
+  }
+
+  // ---- Weight section ----
+  function updateWeightResults() {
+    const valid = weightItems.map(i => ({ id: i.id, val: calcPerOz(i) })).filter(x => x.val !== null);
+    const minVal = valid.length >= 2 ? Math.min(...valid.map(x => x.val)) : null;
+    const maxVal = valid.length >= 2 ? Math.max(...valid.map(x => x.val)) : null;
+
+    weightItems.forEach(item => {
+      const card = document.getElementById('wcard-' + item.id);
+      if (!card) return;
+      const perOz = calcPerOz(item);
+      const isWinner = perOz !== null && valid.length >= 2 && perOz === minVal;
+      const isLoser  = perOz !== null && valid.length >= 2 && perOz === maxVal && minVal !== maxVal;
+      card.className = 'item-card' + (isWinner ? ' winner' : '');
+      card.querySelector('.badge-area').innerHTML =
+        isWinner ? '<span class="badge badge-win">best value</span>' :
+        isLoser  ? '<span class="badge badge-lose">most expensive</span>' : '';
+      const valEl = card.querySelector('.val-oz');
+      valEl.textContent = perOz !== null ? '$' + perOz.toFixed(3) : '—';
+      valEl.className = 'result-val val-oz' + (isWinner ? ' best' : isLoser ? ' worst' : '');
+      const subEl = card.querySelector('.val-lb');
+      subEl.textContent = perOz !== null ? '$' + (perOz * 16).toFixed(2) + ' / lb' : '';
+    });
+    updateWeightVerdict();
+  }
+
+  function updateWeightVerdict() {
+    const el = document.getElementById('verdict-weight');
+    const valid = weightItems.map(i => ({ ...i, v: calcPerOz(i) })).filter(i => i.v !== null);
+    if (valid.length < 2) { el.style.display = 'none'; return; }
+    valid.sort((a, b) => a.v - b.v);
+    const best = valid[0], worst = valid[valid.length - 1];
+    const savings = ((worst.v - best.v) / worst.v * 100).toFixed(0);
+    el.style.display = 'block';
+    document.getElementById('verdict-weight-main').textContent = `${best.name} is the best deal at $${best.v.toFixed(3)}/oz`;
+    document.getElementById('verdict-weight-sub').innerHTML = `That's <strong>${savings}% cheaper</strong> per oz than ${worst.name}.`;
+  }
+
+  function buildWeightCard(item, idx) {
+    const units = ['oz','lb','g','kg','fl oz','ml','l'];
+    const unitOptions = units.map(u => `<option value="${u}"${item.unit === u ? ' selected' : ''}>${u}</option>`).join('');
+    const card = document.createElement('div');
+    card.className = 'item-card';
+    card.id = 'wcard-' + item.id;
+    card.innerHTML = `
+      <div class="card-header">
+        <input class="name-input" type="text" value="${item.name}" placeholder="Item name"
+          oninput="weightItems[${idx}].name=this.value;updateWeightVerdict()" />
+        <button class="remove-btn" style="display:${weightItems.length > 2 ? 'inline-block' : 'none'};"
+          onclick="removeItem('weight',${item.id})">&times;</button>
+      </div>
+      <div class="badge-area"></div>
+      <div class="input-row">
+        <div class="input-col">
+          <p class="label">Price ($)</p>
+          <input type="text" inputmode="decimal" placeholder="0.00"
+            oninput="weightItems[${idx}].price=this.value;updateWeightResults()" />
+        </div>
+        <div class="input-col">
+          <p class="label">Weight</p>
+          <input type="text" inputmode="decimal" placeholder="0"
+            oninput="weightItems[${idx}].weight=this.value;updateWeightResults()" />
+        </div>
+        <div class="input-col unit-col">
+          <p class="label">Unit</p>
+          <select onchange="weightItems[${idx}].unit=this.value;updateWeightResults()">${unitOptions}</select>
+        </div>
+      </div>
+      <div class="results-row">
+        <p class="label">Price per oz</p>
+        <p class="result-val val-oz">—</p>
+        <p class="result-sub val-lb"></p>
+      </div>
+    `;
+    return card;
+  }
+
+  function renderWeightAll() {
+    const grid = document.getElementById('grid-weight');
+    grid.innerHTML = '';
+    weightItems.forEach((item, idx) => grid.appendChild(buildWeightCard(item, idx)));
+    updateWeightResults();
+  }
+
+  // ---- Shared ----
+  function addItem(type) {
+    if (type === 'unit') {
+      unitItems.push({ id: nextUnitId++, name: 'Item ' + (unitItems.length + 1), price: '', qty: '' });
+      renderUnitAll();
+    } else {
+      weightItems.push({ id: nextWeightId++, name: 'Item ' + (weightItems.length + 1), price: '', weight: '', unit: 'oz' });
+      renderWeightAll();
+    }
+  }
+
+  function removeItem(type, id) {
+    if (type === 'unit') {
+      unitItems = unitItems.filter(i => i.id !== id);
+      renderUnitAll();
+    } else {
+      weightItems = weightItems.filter(i => i.id !== id);
+      renderWeightAll();
+    }
+  }
+
+  renderUnitAll();
+  renderWeightAll();
+</script>
+</body>
+</html>
